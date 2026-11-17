@@ -83,8 +83,8 @@
     <ProjectReference Include="../../Inputs/SampleBrowser.Maui.Inputs/SampleBrowser.Maui.Inputs.csproj" />
     <ProjectReference Include="../../InteractiveViewer/SampleBrowser.Maui.InteractiveViewer/SampleBrowser.Maui.InteractiveViewer.csproj" />
     <ProjectReference Include="../../Kanban/SampleBrowser.Maui.Kanban/SampleBrowser.Maui.Kanban.csproj" />
-    <!-- LiquidGlass does not target Android. Omit it for that host TFM only. -->
-    <ProjectReference Include="../../LiquidGlass/SampleBrowser.Maui.LiquidGlass/SampleBrowser.Maui.LiquidGlass.csproj" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'android'" />
+    <!-- LiquidGlass targets only iOS and Mac Catalyst. Omit it for Android and Windows host TFMs. -->
+    <ProjectReference Include="../../LiquidGlass/SampleBrowser.Maui.LiquidGlass/SampleBrowser.Maui.LiquidGlass.csproj" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'android' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'windows'" />
     <ProjectReference Include="../../ListView/SampleBrowser.Maui.ListView/SampleBrowser.Maui.ListView.csproj" />
     <ProjectReference Include="../../Maps/SampleBrowser.Maui.Maps/SampleBrowser.Maui.Maps.csproj" />
     <ProjectReference Include="../../MarkdownViewer/SampleBrowser.Maui.MarkdownViewer/SampleBrowser.Maui.MarkdownViewer.csproj" />
