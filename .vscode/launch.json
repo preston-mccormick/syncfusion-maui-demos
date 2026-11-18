@@ -1,0 +1,20 @@
+{
+    // Target framework, configuration, and device come from the .NET Meteor status bar.
+    // Select SampleBrowser.Maui.Combined there before launching.
+    // The same configuration covers Windows, Android, iOS, and Mac Catalyst.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Meteor Debugger",
+            "type": "dotnet-meteor.debugger",
+            "request": "launch",
+            "preLaunchTask": "dotnet-meteor: Build"
+        },
+        {
+            "name": "Combined: .NET Meteor Debugger",
+            "type": "dotnet-meteor.debugger",
+            "request": "launch",
+            "preLaunchTask": "Combined: build selected target"
+        }
+    ]
+}

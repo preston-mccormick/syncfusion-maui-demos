@@ -1,0 +1,131 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // .NET Meteor builds the project picked in the status bar. Configuration,
+            // target framework, runtime identifier, and device come from the status bar,
+            // so none of them are set here. This is the preLaunch task for every platform.
+            // Meteor builds the .csproj directly, so SolutionName is empty and the
+            // combined switch has to be passed. It reaches every sample project.
+            // Meteor adds -p:WinUISDKReferences=false on Windows. The combined host
+            // compiles WinUI XAML and needs the default, so an empty value drops it.
+            // On Android and Apple that argument is absent, and the empty value is a no-op.
+            "label": "Combined: build selected target",
+            "type": "dotnet-meteor.task",
+            "args": [
+                "-p:CombinedSampleBrowser=true",
+                "-p:WinUISDKReferences="
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        // Command Palette: "Tasks: Run Task".
+        // Full rebuilds every Android sample, then the host. Use it when sample source,
+        // Directory.Build.props, or Directory.Build.targets changed.
+        // AndroidSdkDirectory is the Android Studio default for the OS running the task.
+        {
+            "label": "Combined: Full Android Release",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combined.csproj",
+                "-c",
+                "Release",
+                "-f",
+                "net10.0-android",
+                "-p:CombinedSampleBrowser=true",
+                "-p:AndroidSdkDirectory=${env:HOME}/Library/Android/sdk"
+            ],
+            "windows": {
+                "args": [
+                    "build",
+                    "MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combined.csproj",
+                    "-c",
+                    "Release",
+                    "-f",
+                    "net10.0-android",
+                    "-p:CombinedSampleBrowser=true",
+                    "-p:AndroidSdkDirectory=${env:LOCALAPPDATA}/Android/Sdk"
+                ]
+            },
+            "linux": {
+                "args": [
+                    "build",
+                    "MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combined.csproj",
+                    "-c",
+                    "Release",
+                    "-f",
+                    "net10.0-android",
+                    "-p:CombinedSampleBrowser=true",
+                    "-p:AndroidSdkDirectory=${env:HOME}/Android/Sdk"
+                ]
+            },
+            "problemMatcher": "$msCompile",
+            "group": "build"
+        },
+        // Host only. Reuses the sample libraries already in each sample bin folder.
+        {
+            "label": "Combined: Incremental Android Release",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combined.csproj",
+                "-c",
+                "Release",
+                "-f",
+                "net10.0-android",
+                "-p:CombinedSampleBrowser=true",
+                "-p:BuildProjectReferences=false",
+                "-p:AndroidSdkDirectory=${env:HOME}/Library/Android/sdk"
+            ],
+            "windows": {
+                "args": [
+                    "build",
+                    "MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combined.csproj",
+                    "-c",
+                    "Release",
+                    "-f",
+                    "net10.0-android",
+                    "-p:CombinedSampleBrowser=true",
+                    "-p:BuildProjectReferences=false",
+                    "-p:AndroidSdkDirectory=${env:LOCALAPPDATA}/Android/Sdk"
+                ]
+            },
+            "linux": {
+                "args": [
+                    "build",
+                    "MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combined.csproj",
+                    "-c",
+                    "Release",
+                    "-f",
+                    "net10.0-android",
+                    "-p:CombinedSampleBrowser=true",
+                    "-p:BuildProjectReferences=false",
+                    "-p:AndroidSdkDirectory=${env:HOME}/Android/Sdk"
+                ]
+            },
+            "problemMatcher": "$msCompile",
+            "group": "build"
+        },
+        // Installs the signed Release APK on every device adb currently lists, then launches it.
+        {
+            "label": "Combined: Deploy Android Release",
+            "type": "shell",
+            "command": "set -e; apk=\"MAUI/Combined/SampleBrowser.Maui.Combined/bin/Release/net10.0-android/net.prestonmccormick.syncfusion.maui.combined-Signed.apk\"; if [ ! -f \"$apk\" ]; then echo \"Release APK not found. Run a build task first.\"; exit 1; fi; adb devices | awk 'NR>1 && $2==\"device\" { print $1 }' > \"${TMPDIR:-/tmp}/combined-android-devices.txt\"; if [ ! -s \"${TMPDIR:-/tmp}/combined-android-devices.txt\" ]; then echo \"No Android devices are connected.\"; exit 1; fi; while read -r serial; do echo \"Installing on $serial\"; adb -s \"$serial\" install -r \"$apk\"; adb -s \"$serial\" shell monkey -p net.prestonmccormick.syncfusion.maui.combined -c android.intent.category.LAUNCHER 1; done < \"${TMPDIR:-/tmp}/combined-android-devices.txt\"",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-Command",
+                    "$ErrorActionPreference='Stop'; $apk='MAUI/Combined/SampleBrowser.Maui.Combined/bin/Release/net10.0-android/net.prestonmccormick.syncfusion.maui.combined-Signed.apk'; if (-not (Test-Path -LiteralPath $apk)) { Write-Host 'Release APK not found. Run a build task first.'; exit 1 }; $serials=@(adb devices | Select-Object -Skip 1 | ForEach-Object { if ($_ -match '^(\\S+)\\s+device(\\s|$)') { $Matches[1] } }); if ($serials.Count -eq 0) { Write-Host 'No Android devices are connected.'; exit 1 }; foreach ($serial in $serials) { Write-Host \"Installing on $serial\"; adb -s $serial install -r $apk; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; adb -s $serial shell monkey -p net.prestonmccormick.syncfusion.maui.combined -c android.intent.category.LAUNCHER 1; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }"
+                ]
+            },
+            "problemMatcher": []
+        }
+    ]
+}
