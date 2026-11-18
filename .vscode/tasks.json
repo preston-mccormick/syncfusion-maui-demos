@@ -1,0 +1,26 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // .NET Meteor builds the project picked in the status bar. Configuration,
+            // target framework, runtime identifier, and device (Android serial, Windows
+            // flags) come from the status bar, so none of them are set here.
+            // Meteor builds the .csproj directly, so SolutionName is empty and the
+            // combined switch has to be passed. It reaches every sample project.
+            // Meteor adds -p:WinUISDKReferences=false on Windows. The combined host
+            // compiles WinUI XAML and needs the default, so an empty value drops it.
+            // On other platforms that argument is not present and this is a no-op.
+            "label": "Combined: build selected target",
+            "type": "dotnet-meteor.task",
+            "args": [
+                "-p:CombinedSampleBrowser=true",
+                "-p:WinUISDKReferences="
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
