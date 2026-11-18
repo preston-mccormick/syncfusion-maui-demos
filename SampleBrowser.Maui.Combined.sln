@@ -67,8 +67,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleBrowser.Maui.Interact
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleBrowser.Maui.Kanban", "MAUI/Kanban/SampleBrowser.Maui.Kanban/SampleBrowser.Maui.Kanban.csproj", "{24488693-7A23-50B8-8AA3-5F8CA0858A2B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleBrowser.Maui.LiquidGlass", "MAUI/LiquidGlass/SampleBrowser.Maui.LiquidGlass/SampleBrowser.Maui.LiquidGlass.csproj", "{53CAC417-569D-5226-AC57-868A50E9ED65}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleBrowser.Maui.ListView", "MAUI/ListView/SampleBrowser.Maui.ListView/SampleBrowser.Maui.ListView.csproj", "{542560C9-1244-5007-AEA4-C69D65850495}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleBrowser.Maui.Maps", "MAUI/Maps/SampleBrowser.Maui.Maps/SampleBrowser.Maui.Maps.csproj", "{ED87AA9F-0C56-52C7-9346-50E50CDFEC5A}"
@@ -273,10 +271,6 @@ Global
 		{24488693-7A23-50B8-8AA3-5F8CA0858A2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{24488693-7A23-50B8-8AA3-5F8CA0858A2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{24488693-7A23-50B8-8AA3-5F8CA0858A2B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{53CAC417-569D-5226-AC57-868A50E9ED65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{53CAC417-569D-5226-AC57-868A50E9ED65}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{53CAC417-569D-5226-AC57-868A50E9ED65}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{53CAC417-569D-5226-AC57-868A50E9ED65}.Release|Any CPU.Build.0 = Release|Any CPU
 		{542560C9-1244-5007-AEA4-C69D65850495}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{542560C9-1244-5007-AEA4-C69D65850495}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{542560C9-1244-5007-AEA4-C69D65850495}.Release|Any CPU.ActiveCfg = Release|Any CPU

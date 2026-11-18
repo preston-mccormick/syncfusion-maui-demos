@@ -26,6 +26,24 @@ dotnet build SampleBrowser.Maui.Combined.sln -c Release -f net10.0-android -p:An
 
 Replace `-c Release` and `-f net10.0-android` for Debug, `net10.0-ios`, or `net10.0-maccatalyst`. iOS and Mac Catalyst read the gitignored `signing.props` beside the host.
 
+Windows is unpackaged. Pass the runtime identifier Meteor would pass:
+
+```bash
+dotnet build MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combined.csproj -c Debug -f net10.0-windows10.0.19041.0 -p:CombinedSampleBrowser=true -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
+```
+
+The executable is `bin/Debug/net10.0-windows10.0.19041.0/win-x64/SampleBrowser.Maui.Combined.exe`.
+
+On Windows, iOS, and Mac Catalyst, `SkipFreshCombinedSamples` does not build a sample whose library for that configuration, framework, and runtime identifier is already newer than its sources and newer than `Directory.Build.props` and `Directory.Build.targets`. Android is excluded: the per-architecture pass must enter each sample to copy the already compiled library. `-p:CombinedBuildAllSamples=true` builds every sample. A change to either `Directory.Build` file makes every sample older than those files, so the next build compiles them all.
+
+## Editor launch
+
+`.vscode/launch.json` and `.vscode/tasks.json` are tracked. Launch **Combined: .NET Meteor Debugger**. Meteor fills configuration, target framework, runtime identifier, and device from the status bar. The task only adds `-p:CombinedSampleBrowser=true` and an empty `-p:WinUISDKReferences=`.
+
+The empty WinUI property drops Meteor's Windows-only `-p:WinUISDKReferences=false`. The host compiles WinUI XAML and needs the SDK default. On Android and Apple that argument is absent, so the empty value is a no-op.
+
+`UseMonoRuntime=false` in `Directory.Build.props` applies only when `CombinedSampleBrowser` is set, `UseMonoRuntime` was not already set, and the runtime identifier starts with `win-`. Meteor's `dotnet build -p:RuntimeIdentifier=win-x64` makes restore evaluate every target framework with that identifier. Android and Apple then request `Microsoft.NETCore.App.Runtime.Mono.win-x64` and fail `NU1102`. Do not set `UseMonoRuntime` false for every platform.
+
 ## Install
 
 Build once. Install the signed package on each device:

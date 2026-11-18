@@ -18,6 +18,29 @@ dotnet build MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combin
 
 If one sample did change, build that sample project with `-p:CombinedSampleBrowser=true`, then build the host with `-p:BuildProjectReferences=false`.
 
+Windows is the same host project, unpackaged, so it does not go through MSIX:
+
+```bash
+dotnet build MAUI/Combined/SampleBrowser.Maui.Combined/SampleBrowser.Maui.Combined.csproj -c Debug -f net10.0-windows10.0.19041.0 -p:CombinedSampleBrowser=true -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
+```
+
+The app is `bin/Debug/net10.0-windows10.0.19041.0/win-x64/SampleBrowser.Maui.Combined.exe`. On Windows, iOS, and Mac Catalyst the host build skips a sample whose library for that configuration, framework, and runtime identifier is already newer than the sample's sources and newer than `Directory.Build.props` and `Directory.Build.targets`. A missing library, or a newer source file, still builds. Android does not use that skip: its per-architecture pass has to open each sample to copy the library it already compiled. Pass `-p:CombinedBuildAllSamples=true` to build every sample anyway. Changing either `Directory.Build` file rebuilds every sample once, because those files change how the samples compile.
+
+## Launching the combined app
+
+`.vscode/launch.json` and `.vscode/tasks.json` are committed so a new machine, or a return to this repo much later, does not have to reconstruct the .NET Meteor setup. This fork is maintained on more than one computer. The Mac may already have its own copies of these files; merging them is by hand.
+
+Select **Combined: .NET Meteor Debugger**. The status bar still chooses the project, configuration, target framework, and device, including Android. Nothing in the task hardcodes a platform or a device. Meteor builds the selected `.csproj`, not the solution, so the task passes `-p:CombinedSampleBrowser=true`. Without that, the samples stay executables and the document samples fail `NU1902` and `NU1903`.
+
+Two Meteor behaviors are easy to miss:
+
+* On Windows, Meteor adds `-p:WinUISDKReferences=false`. The combined host compiles WinUI XAML and needs the default, so the task passes an empty `-p:WinUISDKReferences=`, which removes that argument. Other platforms never add it, so the empty value does nothing there.
+* Meteor also passes the device runtime identifier, such as `win-x64`, into `dotnet build`. Restore then evaluates every target framework of each project with that identifier. Android and Apple frameworks default to the Mono runtime and ask for `Microsoft.NETCore.App.Runtime.Mono.win-x64`, which is not published (`NU1102`). A `win-*` identifier is not an Android or Apple build, so combined builds set `UseMonoRuntime` to false only in that case. Forcing it false for every build would change Android.
+
+The other launch configuration, **.NET Meteor Debugger**, is the stock single-project launch. Use it for one control's own sample app.
+
+`.vscode/settings.json` only clears a Roslyn extension's project list. It is not part of the build.
+
 The signed Android package is `MAUI/Combined/SampleBrowser.Maui.Combined/bin/Release/net10.0-android/net.prestonmccormick.syncfusion.maui.combined-Signed.apk`. Install that file on each device:
 
 ```bash

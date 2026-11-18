@@ -21,4 +21,14 @@
   <PropertyGroup Condition="'$(CombinedSampleBrowser)' == 'true' And '$(MSBuildProjectName)' != 'SampleBrowser.Maui.Combined' And $(TargetFramework.Contains('-android'))">
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
+  <!--
+    Meteor passes -p:TargetFramework and -p:RuntimeIdentifier=win-x64 to `dotnet build`.
+    Restore drops the target framework and evaluates every framework of the project with
+    that runtime identifier. Android and Apple default to the Mono runtime, so restore asks
+    for Microsoft.NETCore.App.Runtime.Mono.win-x64, which is not published (NU1102).
+    A win-* identifier is never a real Android or Apple build, so use CoreCLR for it.
+  -->
+  <PropertyGroup Condition="'$(CombinedSampleBrowser)' == 'true' And '$(UseMonoRuntime)' == '' And $(RuntimeIdentifier.StartsWith('win-'))">
+    <UseMonoRuntime>false</UseMonoRuntime>
+  </PropertyGroup>
 </Project>

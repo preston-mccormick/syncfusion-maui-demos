@@ -9,6 +9,16 @@
     <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
   <!--
+    Sample manifests are app packages. Several omit Identity Name, so MSIX
+    validation fails once the project is a library. The host is the only app.
+  -->
+  <PropertyGroup Condition="'$(CombinedSampleBrowser)' == 'true' And '$(MSBuildProjectName)' != 'SampleBrowser.Maui.Combined' And '$(TargetPlatformIdentifier)' == 'windows'">
+    <WindowsPackageType>None</WindowsPackageType>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
+    <AppxPackage>false</AppxPackage>
+  </PropertyGroup>
+  <!--
     Release uses XamlC, which cannot resolve Syncfusion.Maui.Core.LegendItem
     through the shared maui XML namespace. These three samples are the ones
     that hit that. Runtime inflation skips that compile step. SourceGen compiles
@@ -49,7 +59,33 @@
     <MauiXaml Remove="Platforms\Windows\App.xaml" />
     <None Remove="Platforms\Windows\App.xaml" />
     <ApplicationDefinition Remove="Platforms\Windows\App.xaml" />
+    <AppxManifest Remove="@(AppxManifest)" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <CustomAppxManifest Remove="@(CustomAppxManifest)" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Manifest Remove="@(Manifest)" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <None Remove="Platforms\Windows\Package.appxmanifest" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <None Remove="Platforms\Windows\app.manifest" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Content Remove="Platforms\Windows\Package.appxmanifest" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Content Remove="Platforms\Windows\app.manifest" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
   </ItemGroup>
+
+  <!--
+    Globs and the Windows App SDK add the package manifest after the item group
+    above. Drop it again immediately before MSIX validation.
+  -->
+  <Target Name="DropCombinedWindowsPackage"
+          BeforeTargets="_ValidatePresenceOfAppxManifestItems;_ValidateWindowsPackageType"
+          Condition="'$(CombinedSampleBrowser)' == 'true' And '$(MSBuildProjectName)' != 'SampleBrowser.Maui.Combined' And '$(TargetPlatformIdentifier)' == 'windows'">
+    <ItemGroup>
+      <AppxManifest Remove="@(AppxManifest)" />
+      <CustomAppxManifest Remove="@(CustomAppxManifest)" />
+      <Manifest Remove="@(Manifest)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <WindowsPackageType>None</WindowsPackageType>
+      <AppxPackage>false</AppxPackage>
+      <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
+    </PropertyGroup>
+  </Target>
 
   <!--
     Quick Look helpers are copied into several sample projects under the same class names.
@@ -171,5 +207,143 @@
           DestinationFiles="$(_CombinedLibraryBinPdb)"
           SkipUnchangedFiles="true"
           Condition="Exists('$(_CombinedLibraryPdbSource)')" />
+  </Target>
+
+  <!--
+    Android's per-architecture build has to enter each sample: that pass does not
+    compile, it copies the library that was already built. Other platforms compile
+    once, into bin/$(Configuration)/$(TargetFramework)/[$(RuntimeIdentifier)/].
+    A sample whose library is already there, and newer than its sources and these
+    Directory.Build files, is referenced in place. Pass -p:CombinedBuildAllSamples=true
+    to build every sample anyway.
+  -->
+  <UsingTask TaskName="FindFreshCombinedSamples" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Projects ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <ProjectDirectory ParameterType="System.String" Required="true" />
+      <Configuration ParameterType="System.String" Required="true" />
+      <TargetFramework ParameterType="System.String" Required="true" />
+      <RuntimeIdentifier ParameterType="System.String" Required="false" />
+      <SharedInputs ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" />
+      <FreshProjects ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var fresh = new List<Microsoft.Build.Framework.ITaskItem>();
+        foreach (var project in Projects)
+        {
+          var full = project.GetMetadata("FullPath");
+          if (string.IsNullOrEmpty(full))
+          {
+            full = Path.GetFullPath(Path.Combine(ProjectDirectory, project.ItemSpec));
+          }
+          if (!File.Exists(full))
+          {
+            continue;
+          }
+          var projectDir = Path.GetDirectoryName(full);
+          var assemblyName = Path.GetFileNameWithoutExtension(full);
+          var outputDir = Path.Combine(projectDir, "bin", Configuration, TargetFramework);
+          if (!string.IsNullOrEmpty(RuntimeIdentifier))
+          {
+            outputDir = Path.Combine(outputDir, RuntimeIdentifier);
+          }
+          var assemblyPath = Path.Combine(outputDir, assemblyName + ".dll");
+          if (!File.Exists(assemblyPath))
+          {
+            continue;
+          }
+          var builtAt = File.GetLastWriteTimeUtc(assemblyPath);
+          var dirty = false;
+          if (SharedInputs != null)
+          {
+            foreach (var shared in SharedInputs)
+            {
+              if (File.Exists(shared.ItemSpec) && File.GetLastWriteTimeUtc(shared.ItemSpec) > builtAt)
+              {
+                dirty = true;
+                break;
+              }
+            }
+          }
+          if (!dirty)
+          {
+            var pending = new Stack<string>();
+            pending.Push(projectDir);
+            while (pending.Count > 0 && !dirty)
+            {
+              var current = pending.Pop();
+              foreach (var sub in Directory.EnumerateDirectories(current))
+              {
+                var name = Path.GetFileName(sub);
+                if (name.Equals("bin", StringComparison.OrdinalIgnoreCase) || name.Equals("obj", StringComparison.OrdinalIgnoreCase) || name.Equals(".vs", StringComparison.OrdinalIgnoreCase) || name.Equals(".git", StringComparison.OrdinalIgnoreCase))
+                {
+                  continue;
+                }
+                pending.Push(sub);
+              }
+              foreach (var file in Directory.EnumerateFiles(current))
+              {
+                if (File.GetLastWriteTimeUtc(file) > builtAt)
+                {
+                  dirty = true;
+                  break;
+                }
+              }
+            }
+          }
+          if (dirty)
+          {
+            continue;
+          }
+          var item = new Microsoft.Build.Utilities.TaskItem(project.ItemSpec);
+          item.SetMetadata("AssemblyName", assemblyName);
+          item.SetMetadata("AssemblyPath", assemblyPath);
+          fresh.Add(item);
+        }
+        FreshProjects = fresh.ToArray();
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="SkipFreshCombinedSamples"
+          BeforeTargets="AssignProjectConfiguration"
+          Condition="'$(CombinedSampleBrowser)' == 'true' And '$(MSBuildProjectName)' == 'SampleBrowser.Maui.Combined' And '$(BuildProjectReferences)' != 'false' And '$(CombinedBuildAllSamples)' != 'true' And '$(DesignTimeBuild)' != 'true' And '$(TargetFramework)' != '' And !$(TargetFramework.Contains('-android'))">
+    <ItemGroup>
+      <_CombinedSharedInput Include="$(MSBuildThisFileDirectory)Directory.Build.props" />
+      <_CombinedSharedInput Include="$(MSBuildThisFileDirectory)Directory.Build.targets" />
+    </ItemGroup>
+    <FindFreshCombinedSamples
+        Projects="@(ProjectReference)"
+        ProjectDirectory="$(MSBuildProjectDirectory)"
+        Configuration="$(Configuration)"
+        TargetFramework="$(TargetFramework)"
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        SharedInputs="@(_CombinedSharedInput)">
+      <Output TaskParameter="FreshProjects" ItemName="_FreshCombinedSample" />
+    </FindFreshCombinedSamples>
+    <ItemGroup Condition="'@(_FreshCombinedSample)' != ''">
+      <ProjectReference Remove="@(_FreshCombinedSample)" />
+      <ProjectReference Include="@(_FreshCombinedSample)">
+        <BuildReference>false</BuildReference>
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+        <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+      </ProjectReference>
+    </ItemGroup>
+    <ItemGroup Condition="'@(_FreshCombinedSample)' != ''">
+      <Reference Include="%(_FreshCombinedSample.AssemblyName)">
+        <HintPath>%(_FreshCombinedSample.AssemblyPath)</HintPath>
+        <Private>true</Private>
+      </Reference>
+    </ItemGroup>
+    <PropertyGroup>
+      <_CombinedSamplesNotBuilt>@(ProjectReference->WithMetadataValue('BuildReference', 'false')->Count())</_CombinedSamplesNotBuilt>
+      <_CombinedSampleTotal>@(ProjectReference->Count())</_CombinedSampleTotal>
+    </PropertyGroup>
+    <Message Importance="high" Text="Combined build: $(_CombinedSamplesNotBuilt) of $(_CombinedSampleTotal) sample(s) already built and unchanged." Condition="'$(_CombinedSamplesNotBuilt)' != '0'" />
   </Target>
 </Project>
