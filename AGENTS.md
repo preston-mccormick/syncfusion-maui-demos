@@ -38,9 +38,13 @@ On Windows, iOS, and Mac Catalyst, `SkipFreshCombinedSamples` does not build a s
 
 ## Editor launch
 
-`.vscode/launch.json` and `.vscode/tasks.json` are tracked. Launch **Combined: .NET Meteor Debugger**. Meteor fills configuration, target framework, runtime identifier, and device from the status bar. The task only adds `-p:CombinedSampleBrowser=true` and an empty `-p:WinUISDKReferences=`.
+`.vscode/launch.json` and `.vscode/tasks.json` are tracked. Launch **Combined: .NET Meteor Debugger**. Meteor fills configuration, target framework, runtime identifier, and device from the status bar, for Windows, Android, iOS, or Mac Catalyst. The task only adds `-p:CombinedSampleBrowser=true` and an empty `-p:WinUISDKReferences=`.
 
 The empty WinUI property drops Meteor's Windows-only `-p:WinUISDKReferences=false`. The host compiles WinUI XAML and needs the SDK default. On Android and Apple that argument is absent, so the empty value is a no-op.
+
+The same `tasks.json` has three Android Release tasks for the command palette: a full build, a host-only incremental build, and a deploy that installs the signed APK on every device `adb` lists. `AndroidSdkDirectory` is the Android Studio default for the OS running the task.
+
+`.vscode/settings.json` points DotRush at `SampleBrowser.Maui.Combined.sln` with a path relative to the workspace. This repo has many solutions, so an empty list makes DotRush prompt and then write an absolute path.
 
 `UseMonoRuntime=false` in `Directory.Build.props` applies only when `CombinedSampleBrowser` is set, `UseMonoRuntime` was not already set, and the runtime identifier starts with `win-`. Meteor's `dotnet build -p:RuntimeIdentifier=win-x64` makes restore evaluate every target framework with that identifier. Android and Apple then request `Microsoft.NETCore.App.Runtime.Mono.win-x64` and fail `NU1102`. Do not set `UseMonoRuntime` false for every platform.
 

@@ -28,9 +28,11 @@ The app is `bin/Debug/net10.0-windows10.0.19041.0/win-x64/SampleBrowser.Maui.Com
 
 ## Launching the combined app
 
-`.vscode/launch.json` and `.vscode/tasks.json` are committed so a new machine, or a return to this repo much later, does not have to reconstruct the .NET Meteor setup. This fork is maintained on more than one computer. The Mac may already have its own copies of these files; merging them is by hand.
+`.vscode/launch.json` and `.vscode/tasks.json` are committed so a new machine, or a return to this repo much later, does not have to reconstruct the .NET Meteor setup. This fork is maintained on more than one computer. The combined launch configuration is the same on each of them.
 
-Select **Combined: .NET Meteor Debugger**. The status bar still chooses the project, configuration, target framework, and device, including Android. Nothing in the task hardcodes a platform or a device. Meteor builds the selected `.csproj`, not the solution, so the task passes `-p:CombinedSampleBrowser=true`. Without that, the samples stay executables and the document samples fail `NU1902` and `NU1903`.
+Select **Combined: .NET Meteor Debugger**. The status bar still chooses the project, configuration, target framework, and device: Windows, Android, iOS, or Mac Catalyst. Nothing in that task hardcodes a platform or a device. Meteor builds the selected `.csproj`, not the solution, so the task passes `-p:CombinedSampleBrowser=true`. Without that, the samples stay executables and the document samples fail `NU1902` and `NU1903`.
+
+Command Palette tasks **Combined: Full Android Release**, **Combined: Incremental Android Release**, and **Combined: Deploy Android Release** build or install the signed Android package. The SDK path in those tasks is the Android Studio default for macOS, Windows, or Linux.
 
 Two Meteor behaviors are easy to miss:
 
@@ -39,7 +41,7 @@ Two Meteor behaviors are easy to miss:
 
 The other launch configuration, **.NET Meteor Debugger**, is the stock single-project launch. Use it for one control's own sample app.
 
-`.vscode/settings.json` only clears a Roslyn extension's project list. It is not part of the build.
+`.vscode/settings.json` points DotRush at `SampleBrowser.Maui.Combined.sln` with a workspace-relative path. It is not part of the build. An empty list makes DotRush prompt, then write a machine-specific absolute path, because this repo contains many solutions.
 
 The signed Android package is `MAUI/Combined/SampleBrowser.Maui.Combined/bin/Release/net10.0-android/net.prestonmccormick.syncfusion.maui.combined-Signed.apk`. Install that file on each device:
 
